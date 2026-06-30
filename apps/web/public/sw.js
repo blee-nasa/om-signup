@@ -1,4 +1,4 @@
-const CACHE = "om-signup-v1";
+const CACHE = "om-signup-__BUILD_ID__";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
