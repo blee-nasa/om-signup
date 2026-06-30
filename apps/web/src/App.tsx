@@ -27,16 +27,19 @@ function App() {
   const dbConnected = status.phase === "ok" && status.health.db.connected;
 
   return (
-    <main className="grid min-h-screen place-items-center">
-      {status.phase === "loading" ? (
-        <p>Checking…</p>
-      ) : (
-        <p>
-          API: {apiReachable ? "Reachable" : "Unreachable"}, DB:{" "}
-          {dbConnected ? "Connected" : "Disconnected"}
-        </p>
-      )}
-    </main>
+    <div className="flex min-h-screen flex-col">
+      <header className="p-4 text-center font-semibold">LaRC Open Mic</header>
+      <main className="grid flex-1 place-items-center">
+        {status.phase === "loading" ? (
+          <p>Checking…</p>
+        ) : (
+          <p>
+            API: {apiReachable ? "Reachable" : "Unreachable"}, DB:{" "}
+            {dbConnected ? "Connected" : "Disconnected"}
+          </p>
+        )}
+      </main>
+    </div>
   );
 }
 
