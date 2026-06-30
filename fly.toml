@@ -1,4 +1,4 @@
-app = "om-signup"
+app = "nasa-om"
 primary_region = "iad"
 
 [build]

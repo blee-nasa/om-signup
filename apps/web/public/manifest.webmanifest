@@ -1,6 +1,6 @@
 {
-  "name": "Open Mic Sign-Up",
-  "short_name": "Open Mic",
+  "name": "LaRC OM",
+  "short_name": "LaRC OM",
   "description": "Digital sign-up sheet for LaRC Open Mic.",
   "start_url": "/",
   "scope": "/",
