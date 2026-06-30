@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0b1020"/>
+  <!-- holder arc -->
+  <path d="M176 244 v16 a80 80 0 0 0 160 0 v-16" fill="none" stroke="#a78bfa" stroke-width="16" stroke-linecap="round"/>
+  <!-- stand -->
+  <line x1="256" y1="340" x2="256" y2="404" stroke="#a78bfa" stroke-width="16" stroke-linecap="round"/>
+  <line x1="212" y1="404" x2="300" y2="404" stroke="#a78bfa" stroke-width="16" stroke-linecap="round"/>
+  <!-- mic capsule -->
+  <rect x="216" y="116" width="80" height="184" rx="40" fill="#f8fafc"/>
+  <!-- grille lines -->
+  <line x1="232" y1="162" x2="280" y2="162" stroke="#0b1020" stroke-width="9" stroke-linecap="round"/>
+  <line x1="232" y1="192" x2="280" y2="192" stroke="#0b1020" stroke-width="9" stroke-linecap="round"/>
+  <line x1="232" y1="222" x2="280" y2="222" stroke="#0b1020" stroke-width="9" stroke-linecap="round"/>
+</svg>

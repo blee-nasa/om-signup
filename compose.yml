@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: om-signup-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5438}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-om_signup}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-om_signup}
+      POSTGRES_DB: ${POSTGRES_DB:-om_signup}
+    volumes:
+      - om-signup-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-om_signup} -d ${POSTGRES_DB:-om_signup}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  om-signup-pgdata:

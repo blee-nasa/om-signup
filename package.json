@@ -1,0 +1,30 @@
+{
+  "name": "om-signup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "bun run --cwd apps/api dev & bun run --cwd apps/web dev & wait",
+    "build": "bun run --cwd apps/web build",
+    "start": "bun run --cwd apps/api start",
+    "lint": "oxlint apps",
+    "lint:fix": "oxlint apps --fix",
+    "typecheck": "bun run --cwd apps/api typecheck && bun run --cwd apps/web typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "coverage": "vitest run --coverage",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:push": "bun run --cwd apps/api db:push",
+    "db:generate": "bun run --cwd apps/api db:generate",
+    "db:migrate": "bun run --cwd apps/api db:migrate",
+    "check": "bun run lint && bun run typecheck && bun run test"
+  },
+  "devDependencies": {
+    "@vitest/coverage-istanbul": "4.1.7",
+    "oxlint": "^1.71.0",
+    "vitest": "4.1.7"
+  }
+}
