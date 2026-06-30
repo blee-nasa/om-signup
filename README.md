@@ -21,13 +21,12 @@ The web client shows a centered **`API: Reachable, DB: Connected`** status by ca
 ├── apps/
 │   ├── api/                 # ElysiaJS + Drizzle
 │   │   ├── src/
-│   │   │   ├── app.ts        # createApi(prefix) factory (cors, openapi, routes)
+│   │   │   ├── app.ts        # createApi(prefix) factory (cors, openapi)
 │   │   │   ├── index.ts      # standalone entry (dev/tests) — health at /
 │   │   │   ├── server.ts     # prod entry — serves SPA + mounts API at /api
 │   │   │   ├── health.ts     # GET / -> SELECT 1 + 1
-│   │   │   ├── db/           # drizzle client + schema (signups)
-│   │   │   └── routes/       # signups
-│   │   └── drizzle.config.ts
+│   │   │   └── db/           # drizzle client + schema
+│   │   └── drizzle.config.ts # migrations config
 │   └── web/                 # Vite + React PWA
 │       ├── public/          # manifest.webmanifest, sw.js, icons
 │       └── src/             # App.tsx (status UI), api.ts, tests
@@ -47,7 +46,6 @@ The web client shows a centered **`API: Reachable, DB: Connected`** status by ca
 bun install
 cp .env.example .env          # local DB url + PORT
 bun run db:up                 # start Postgres (docker compose)
-bun run db:push               # apply the Drizzle schema
 bun run dev                   # API on :3000, web on :5173
 ```
 
@@ -65,12 +63,12 @@ Open http://localhost:5173 — you should see **API: Reachable, DB: Connected**.
 | `bun run test`                                   | Run all tests (api + web)                     |
 | `bun run test:coverage`                          | Tests + coalesced HTML report in `.coverage/` |
 | `bun run db:up` / `db:down`                      | Start / stop Postgres                         |
-| `bun run db:push` / `db:generate` / `db:migrate` | Drizzle schema ops                            |
+| `bun run db:generate` / `db:migrate` / `db:push` | Drizzle migrations / schema ops               |
 | `bun run check`                                  | lint + typecheck + test                       |
 
 ## Testing & coverage
 
-Web tests run in jsdom; API tests drive Elysia in-process via `app.handle(new Request(...))`. **Integration tests** (real Postgres round-trips) are gated on `DATABASE_URL` — they run automatically when Postgres is up (`bun run db:up && bun run db:push`) and skip otherwise.
+Web tests run in jsdom; API tests drive Elysia in-process via `app.handle(new Request(...))`. The **integration test** (a real `SELECT 1 + 1` Postgres round-trip via the healthcheck) is gated on `DATABASE_URL` — it runs automatically when Postgres is up (`bun run db:up`) and skips otherwise.
 
 ```bash
 bun run test:coverage   # open .coverage/index.html for the combined report
@@ -79,10 +77,9 @@ bun run test:coverage   # open .coverage/index.html for the combined report
 ## API
 
 - `GET /api` — healthcheck JSON: `{ "status": "ok", "db": { "connected": true, "result": 2 } }`
-- `GET /api/signups` / `POST /api/signups` — list / add a sign-up
 - `GET /api/docs` — OpenAPI (Scalar) UI; spec at `/api/docs/json`
 
-(Standalone, the API serves these at `/`, `/signups`, `/docs`.)
+(Standalone, the API serves these at `/` and `/docs`.)
 
 ## Deploy to Fly.io
 

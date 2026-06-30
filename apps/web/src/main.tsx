@@ -12,8 +12,6 @@ createRoot(rootEl).render(
   </StrictMode>,
 );
 
-// Register the hand-rolled service worker (production only — avoids caching the
-// dev server). See public/sw.js.
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});

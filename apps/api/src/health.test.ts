@@ -16,7 +16,6 @@ describe("GET / (healthcheck)", () => {
     expect(typeof body.db.connected).toBe("boolean");
   });
 
-  // Integration: requires a reachable Postgres (DATABASE_URL set via .env).
   it.skipIf(!process.env.DATABASE_URL)(
     "reports the DB connected via SELECT 1 + 1",
     async () => {

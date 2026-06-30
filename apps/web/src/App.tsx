@@ -27,19 +27,13 @@ function App() {
   const dbConnected = status.phase === "ok" && status.health.db.connected;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 px-6 text-slate-100">
+    <main className="grid min-h-screen place-items-center">
       {status.phase === "loading" ? (
-        <p className="text-lg text-slate-400">Checking status…</p>
+        <p>Checking…</p>
       ) : (
-        <p className="text-xl font-medium tracking-tight sm:text-2xl">
-          API:{" "}
-          <span className={apiReachable ? "text-emerald-400" : "text-rose-400"}>
-            {apiReachable ? "Reachable" : "Unreachable"}
-          </span>
-          , DB:{" "}
-          <span className={dbConnected ? "text-emerald-400" : "text-rose-400"}>
-            {dbConnected ? "Connected" : "Disconnected"}
-          </span>
+        <p>
+          API: {apiReachable ? "Reachable" : "Unreachable"}, DB:{" "}
+          {dbConnected ? "Connected" : "Disconnected"}
         </p>
       )}
     </main>

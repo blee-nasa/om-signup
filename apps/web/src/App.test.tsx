@@ -15,20 +15,22 @@ describe("App status", () => {
   it("renders API Reachable, DB Connected when healthy", async () => {
     mockHealth({ status: "ok", db: { connected: true, result: 2 } });
     render(<App />);
-    await waitFor(() => expect(screen.getByText("Reachable")).toBeInTheDocument());
-    expect(screen.getByText("Connected")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText(/API: Reachable, DB: Connected/)).toBeInTheDocument(),
+    );
   });
 
   it("renders Disconnected when the DB is down but the API responds", async () => {
     mockHealth({ status: "degraded", db: { connected: false, result: null } });
     render(<App />);
-    await waitFor(() => expect(screen.getByText("Disconnected")).toBeInTheDocument());
-    expect(screen.getByText("Reachable")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText(/API: Reachable, DB: Disconnected/)).toBeInTheDocument(),
+    );
   });
 
   it("renders Unreachable when the request fails", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network"));
     render(<App />);
-    await waitFor(() => expect(screen.getByText("Unreachable")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/API: Unreachable/)).toBeInTheDocument());
   });
 });
