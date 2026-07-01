@@ -5,7 +5,7 @@
   "type": "module",
   "workspaces": ["apps/*"],
   "scripts": {
-    "dev": "bun run --cwd apps/api dev & bun run --cwd apps/web dev & wait",
+    "dev": "concurrently -n api,web -c blue,green \"bun run --cwd apps/api dev\" \"bun run --cwd apps/web dev\"",
     "build": "bun run --cwd apps/web build",
     "start": "bun run --cwd apps/api start",
     "lint": "oxlint apps",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@vitest/coverage-istanbul": "4.1.7",
+    "concurrently": "^10.0.3",
     "oxlint": "^1.71.0",
     "vitest": "4.1.7"
   }
