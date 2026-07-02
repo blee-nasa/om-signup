@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 afterEach(() => {
   vi.doUnmock("./lib/Claude/index.ts");
   vi.resetModules();
+  vi.unstubAllEnvs();
 });
 
 const mockClaude = (sendMessage: ReturnType<typeof vi.fn>) => {
@@ -34,6 +35,19 @@ describe("checkAnthropic", () => {
     const { checkAnthropic } = await import("./anthropic-probe.ts");
 
     await expect(checkAnthropic(1000)).resolves.toEqual({ reachable: false });
+  });
+
+  it("short-circuits to reachable:false in production without a key, without probing", async () => {
+    const sendMessage = vi.fn();
+    mockClaude(sendMessage);
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    const { checkAnthropic } = await import("./anthropic-probe.ts");
+
+    await expect(checkAnthropic(1000)).resolves.toEqual({ reachable: false });
+    expect(sendMessage).not.toHaveBeenCalled();
+
+    vi.unstubAllEnvs();
   });
 
   it("caches the result within the TTL window and refreshes after it", async () => {

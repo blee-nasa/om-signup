@@ -25,8 +25,15 @@ const probe = async (): Promise<boolean> => {
 };
 
 export const checkAnthropic = async (now = Date.now()): Promise<{ reachable: boolean }> => {
+  // Without an API key the facade falls back to the local Claude CLI, which only
+  // exists in development. In production that probe hangs (no CLI in the
+  // container) and would stall the healthcheck, so report unreachable instantly.
+  if (!process.env.ANTHROPIC_API_KEY && process.env.NODE_ENV === "production") {
+    return { reachable: false };
+  }
   if (cache && now - cache.at < TTL_MS) return { reachable: cache.reachable };
   const reachable = await withTimeout(probe(), PROBE_TIMEOUT_MS, false);
   cache = { at: now, reachable };
   return { reachable };
 };
+
