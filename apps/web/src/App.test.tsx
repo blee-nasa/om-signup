@@ -2,35 +2,24 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App.tsx";
 
-const mockHealth = (body: unknown) =>
-  vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(JSON.stringify(body), {
-      headers: { "content-type": "application/json" },
-    }),
-  );
-
 afterEach(() => vi.restoreAllMocks());
 
-describe("App status", () => {
-  it("renders API Reachable, DB Connected when healthy", async () => {
-    mockHealth({ status: "ok", db: { connected: true, result: 2 } });
-    render(<App />);
-    await waitFor(() =>
-      expect(screen.getByText(/API: Reachable, DB: Connected/)).toBeInTheDocument(),
+describe("<App />", () => {
+  it("renders the landing screen with a health status dot", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: "ok",
+          db: { connected: true, result: 2 },
+          anthropic: { reachable: true },
+        }),
+        { headers: { "content-type": "application/json" } },
+      ),
     );
-  });
-
-  it("renders Disconnected when the DB is down but the API responds", async () => {
-    mockHealth({ status: "degraded", db: { connected: false, result: null } });
     render(<App />);
+    expect(screen.getByText("LaRC Open Mic")).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByText(/API: Reachable, DB: Disconnected/)).toBeInTheDocument(),
+      expect(screen.getByRole("status")).toHaveAttribute("aria-label", "All systems operational"),
     );
-  });
-
-  it("renders Unreachable when the request fails", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network"));
-    render(<App />);
-    await waitFor(() => expect(screen.getByText(/API: Unreachable/)).toBeInTheDocument());
   });
 });

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
+import { checkAnthropic } from "./anthropic-probe.ts";
 import { db } from "./db/index.ts";
 
 const healthResponse = t.Object({
@@ -7,6 +8,9 @@ const healthResponse = t.Object({
   db: t.Object({
     connected: t.Boolean(),
     result: t.Union([t.Number(), t.Null()]),
+  }),
+  anthropic: t.Object({
+    reachable: t.Boolean(),
   }),
 });
 
@@ -27,17 +31,20 @@ export const checkDb = async (): Promise<{ connected: boolean; result: number | 
 export const healthRoute = new Elysia().get(
   "/",
   async () => {
-    const dbStatus = await checkDb();
+    const [dbStatus, anthropicStatus] = await Promise.all([checkDb(), checkAnthropic()]);
+    const healthy = dbStatus.connected && anthropicStatus.reachable;
     return {
-      status: dbStatus.connected ? ("ok" as const) : ("degraded" as const),
+      status: healthy ? ("ok" as const) : ("degraded" as const),
       db: dbStatus,
+      anthropic: anthropicStatus,
     };
   },
   {
     response: { 200: healthResponse },
     detail: {
       summary: "Healthcheck",
-      description: "Runs `SELECT 1 + 1` against Postgres to verify the DB connection.",
+      description:
+        "Verifies the DB connection (`SELECT 1 + 1`) and probes the Anthropic API with a minimal Haiku request (cached 60s).",
       tags: ["System"],
     },
   },

@@ -3,6 +3,7 @@ import { defineProject } from "vitest/config";
 
 export default defineProject({
   plugins: [react()],
+  resolve: { tsconfigPaths: true },
   test: {
     name: "web",
     globals: true,

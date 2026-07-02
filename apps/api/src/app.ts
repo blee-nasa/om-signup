@@ -1,6 +1,7 @@
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import { Elysia } from "elysia";
+import { chatRoute } from "./chat.ts";
 import { healthRoute } from "./health.ts";
 
 export const createApi = (prefix = "") =>
@@ -27,6 +28,7 @@ export const createApi = (prefix = "") =>
         },
       }),
     )
-    .use(healthRoute);
+    .use(healthRoute)
+    .use(chatRoute);
 
 export type Api = ReturnType<typeof createApi>;

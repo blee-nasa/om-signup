@@ -13,7 +13,7 @@ The web client shows a centered **`API: Reachable, DB: Connected`** status by ca
 
 ## Architecture
 
-- **Dev:** the API runs standalone on `:3000` (healthcheck at `/`); Vite serves the SPA on `:5173` and proxies `/api/*` to the API.
+- **Dev:** the API runs standalone on `:3100` (healthcheck at `/`); Vite serves the SPA on `:5183` and proxies `/api/*` to the API.
 - **Prod (single Fly app):** one Docker image — Elysia serves the built SPA at `/` and mounts the API under `/api` (so the healthcheck answers at `/api`, docs at `/api/docs`). The client uses the `/api` URL in both environments.
 
 ```
@@ -46,10 +46,10 @@ The web client shows a centered **`API: Reachable, DB: Connected`** status by ca
 bun install
 cp .env.example .env          # local DB url + PORT
 bun run db:up                 # start Postgres (docker compose)
-bun run dev                   # API on :3000, web on :5173
+bun run dev                   # API on :3100, web on :5183
 ```
 
-Open http://localhost:5173 — you should see **API: Reachable, DB: Connected**.
+Open http://localhost:5183 — you should see **API: Reachable, DB: Connected**.
 
 ## Scripts
 
