@@ -7,7 +7,7 @@ import { assistantTools } from "./tools/index.ts";
 const read = (name: string) =>
   readFileSync(fileURLToPath(new URL(`./prompts/${name}.prompt.md`, import.meta.url)), "utf-8").trimEnd();
 
-const prompts = ["preamble"].map(read);
+const prompts = ["preamble", "test-mode"].map(read);
 
 export class AssistantAgent extends Agent {
   constructor() {

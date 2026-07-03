@@ -5,9 +5,10 @@ import styles from "./ChatScreen.module.css";
 
 type ChatScreenProps = {
   onClose?: () => void;
+  onAssistantReply?: () => void;
 };
 
-export const ChatScreen = ({ onClose }: ChatScreenProps) => {
+export const ChatScreen = ({ onClose, onAssistantReply }: ChatScreenProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
@@ -25,6 +26,7 @@ export const ChatScreen = ({ onClose }: ChatScreenProps) => {
     try {
       const response = await sendChat(next);
       setMessages([...next, { role: "assistant", content: response }]);
+      onAssistantReply?.();
     } catch {
       setFailed(true);
     } finally {

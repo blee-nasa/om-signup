@@ -36,6 +36,23 @@ describe("<ChatScreen />", () => {
     await waitFor(() => expect(screen.getByText(/wind tunnels/)).toBeInTheDocument());
   });
 
+  it("invokes onAssistantReply after a successful reply", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ response: "Test mode is on." }), {
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const onAssistantReply = vi.fn();
+    render(<ChatScreen onAssistantReply={onAssistantReply} />);
+
+    fireEvent.change(screen.getByLabelText("Chat message"), {
+      target: { value: "Run the test mode" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => expect(onAssistantReply).toHaveBeenCalledOnce());
+  });
+
   it("shows an error line when the chat request fails", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("nope", { status: 500 }));
     render(<ChatScreen />);

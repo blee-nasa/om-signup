@@ -10,6 +10,70 @@ export async function fetchHealth(): Promise<Health> {
   return (await res.json()) as Health;
 }
 
+export type OpenMicEvent = {
+  id: number;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  slotCount: number;
+  slotMinutes: number;
+};
+
+export type NextEvent = {
+  mode: "signup" | "upcoming" | "none";
+  event: OpenMicEvent | null;
+};
+
+export async function fetchNextEvent(): Promise<NextEvent> {
+  const res = await fetch("/api/events/next");
+  if (!res.ok) throw new Error(`Next event failed: ${res.status}`);
+  return (await res.json()) as NextEvent;
+}
+
+export type Signup = { id: number; slot: number; name: string; act: string | null; createdAt: string };
+
+export type SlotEntry = { slot: number; startsAt: string; signup: Signup | null };
+
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const serverError = async (res: Response, fallback: string): Promise<string> => {
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body?.error) return body.error;
+  } catch {
+    // non-JSON body
+  }
+  return fallback;
+};
+
+export async function fetchSlots(eventId: number): Promise<SlotEntry[]> {
+  const res = await fetch(`/api/events/${eventId}/signups`);
+  if (!res.ok) throw new ApiError(await serverError(res, `Slots failed: ${res.status}`), res.status);
+  const body = (await res.json()) as { slots: SlotEntry[] };
+  return body.slots;
+}
+
+export async function createSignup(
+  eventId: number,
+  input: { slot: number; name: string; act?: string },
+): Promise<Signup> {
+  const res = await fetch(`/api/events/${eventId}/signups`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new ApiError(await serverError(res, `Sign-up failed: ${res.status}`), res.status);
+  const body = (await res.json()) as { signup: Signup };
+  return body.signup;
+}
+
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export async function sendChat(messages: ChatMessage[]): Promise<string> {

@@ -67,8 +67,17 @@ export class AnthropicClient {
                 is_error: true,
               };
             }
+            const parsed = tool.schema.safeParse(block.input);
+            if (!parsed.success) {
+              return {
+                type: "tool_result",
+                tool_use_id: block.id,
+                content: `Invalid input for ${tool.name}: ${parsed.error.message}`,
+                is_error: true,
+              };
+            }
             try {
-              return { type: "tool_result", tool_use_id: block.id, content: await tool.run(block.input, ctx) };
+              return { type: "tool_result", tool_use_id: block.id, content: await tool.run(parsed.data, ctx) };
             } catch (error) {
               return {
                 type: "tool_result",

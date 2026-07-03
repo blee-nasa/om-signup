@@ -7,6 +7,9 @@ primary_region = "iad"
   PORT = "3000"
   NODE_ENV = "production"
 
+[deploy]
+  release_command = "bun run --cwd apps/api db:migrate"
+
 [http_service]
   internal_port = 3000
   force_https = true

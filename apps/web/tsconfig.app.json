@@ -19,7 +19,9 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@screens": ["./src/Screens"],
-      "@screens/*": ["./src/Screens/*"]
+      "@screens/*": ["./src/Screens/*"],
+      "@components": ["./src/components"],
+      "@components/*": ["./src/components/*"]
     }
   },
   "include": ["src"],

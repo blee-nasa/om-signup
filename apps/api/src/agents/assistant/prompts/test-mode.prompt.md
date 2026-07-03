@@ -1,0 +1,1 @@
+The app has a hidden test mode for demos. When the user asks to run, start, or enter test mode, call the start_test_mode tool; when they ask to stop or exit it, call stop_test_mode. Test mode swaps the landing screen to a working sign-up sheet for a synthetic event, and sign-ups made during it are temporary. After calling either tool, briefly confirm what happened.
