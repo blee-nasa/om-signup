@@ -1,4 +1,4 @@
-import { LandingScreen } from "@screens";
+import { LandingScreen } from "@Screens";
 
 function App() {
   return <LandingScreen />;

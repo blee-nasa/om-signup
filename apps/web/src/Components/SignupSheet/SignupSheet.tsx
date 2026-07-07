@@ -15,7 +15,7 @@ type SignupSheetProps = {
 
 type Load = "loading" | "ready" | "error";
 
-const POLL_MS = 30_000;
+const POLL_MS = 10_000;
 
 const timeLabel = (iso: string) =>
   new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
@@ -123,6 +123,16 @@ export const SignupSheet = ({ event = null }: SignupSheetProps) => {
                     </span>
                     <span className="font-medium">{entry.signup.name}</span>
                     {entry.signup.act && <span className="text-gray-500">— {entry.signup.act}</span>}
+                  </div>
+                ) : entry.claiming && entry.slot !== selected ? (
+                  <div
+                    aria-label={`${timeLabel(entry.startsAt)} slot is being claimed by someone else`}
+                    className="flex w-full items-center gap-3 rounded border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-left"
+                  >
+                    <span className="w-14 shrink-0 text-sm text-gray-400">
+                      {timeLabel(entry.startsAt)}
+                    </span>
+                    <span className="text-amber-600">Someone's claiming this…</span>
                   </div>
                 ) : (
                   <button

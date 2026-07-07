@@ -30,7 +30,6 @@ The web client shows a centered **`API: Reachable, DB: Connected`** status by ca
 │   └── web/                 # Vite + React PWA
 │       ├── public/          # manifest.webmanifest, sw.js, icons
 │       └── src/             # App.tsx (status UI), api.ts, tests
-├── compose.yml              # Postgres 17 for local dev
 ├── Dockerfile               # single-image build for Fly.io
 ├── fly.toml
 └── vitest.config.ts         # coalesced api+web coverage -> .coverage/
@@ -38,14 +37,13 @@ The web client shows a centered **`API: Reachable, DB: Connected`** status by ca
 
 ## Prerequisites
 
-[Bun](https://bun.sh) 1.3+, Docker (local Postgres), and the [Fly CLI](https://fly.io/docs/flyctl/) to deploy.
+[Bun](https://bun.sh) 1.3+, a **Postgres 17** instance for local dev (point `DATABASE_URL` at it), and the [Fly CLI](https://fly.io/docs/flyctl/) to deploy.
 
 ## Quick start
 
 ```bash
 bun install
-cp .env.example .env          # local DB url + PORT
-bun run db:up                 # start Postgres (docker compose)
+cp .env.example .env          # point DATABASE_URL at a local Postgres 17 + set PORT
 bun run dev                   # API on :3100, web on :5183
 ```
 
@@ -62,13 +60,12 @@ Open http://localhost:5183 — you should see **API: Reachable, DB: Connected**.
 | `bun run typecheck`                              | `tsc` for api and web                         |
 | `bun run test`                                   | Run all tests (api + web)                     |
 | `bun run test:coverage`                          | Tests + coalesced HTML report in `.coverage/` |
-| `bun run db:up` / `db:down`                      | Start / stop Postgres                         |
 | `bun run db:generate` / `db:migrate` / `db:push` | Drizzle migrations / schema ops               |
 | `bun run check`                                  | lint + typecheck + test                       |
 
 ## Testing & coverage
 
-Web tests run in jsdom; API tests drive Elysia in-process via `app.handle(new Request(...))`. The **integration test** (a real `SELECT 1 + 1` Postgres round-trip via the healthcheck) is gated on `DATABASE_URL` — it runs automatically when Postgres is up (`bun run db:up`) and skips otherwise.
+Web tests run in jsdom; API tests drive Elysia in-process via `app.handle(new Request(...))`. The **integration test** (a real `SELECT 1 + 1` Postgres round-trip via the healthcheck) is gated on `DATABASE_URL` — it runs automatically when a Postgres is reachable at that URL and skips otherwise.
 
 ```bash
 bun run test:coverage   # open .coverage/index.html for the combined report

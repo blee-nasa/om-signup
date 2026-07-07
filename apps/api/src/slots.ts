@@ -14,7 +14,11 @@ export type SlotSignup = {
 export const slotStartsAt = (config: SlotConfig, slot: number): Date =>
   new Date(config.startsAt.getTime() + slot * config.slotMinutes * 60_000);
 
-export const toSlots = (config: SlotConfig, rows: SlotSignup[]) => {
+export const toSlots = (
+  config: SlotConfig,
+  rows: SlotSignup[],
+  isClaiming: (slot: number) => boolean = () => false,
+) => {
   const bySlot = new Map(rows.map((row) => [row.slot, row]));
   return Array.from({ length: config.slotCount }, (_, slot) => {
     const row = bySlot.get(slot);
@@ -30,6 +34,7 @@ export const toSlots = (config: SlotConfig, rows: SlotSignup[]) => {
             createdAt: row.createdAt.toISOString(),
           }
         : null,
+      claiming: row ? false : isClaiming(slot),
     };
   });
 };

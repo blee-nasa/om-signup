@@ -32,7 +32,12 @@ export async function fetchNextEvent(): Promise<NextEvent> {
 
 export type Signup = { id: number; slot: number; name: string; act: string | null; createdAt: string };
 
-export type SlotEntry = { slot: number; startsAt: string; signup: Signup | null };
+export type SlotEntry = {
+  slot: number;
+  startsAt: string;
+  signup: Signup | null;
+  claiming: boolean;
+};
 
 export class ApiError extends Error {
   readonly status: number;

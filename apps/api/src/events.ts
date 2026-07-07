@@ -2,6 +2,7 @@ import { asc, eq, gte } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import { db } from "./db/index.ts";
 import { events, signups } from "./db/schema.ts";
+import { beginClaim, endClaim, isClaiming } from "./slot-claims.ts";
 import { toSlots } from "./slots.ts";
 import { addTestSignup, listTestSignups, TEST_EVENT_ID, testModeEvent } from "./test-mode.ts";
 
@@ -55,6 +56,7 @@ const slotShape = t.Object({
   slot: t.Number(),
   startsAt: t.String(),
   signup: t.Union([signupShape, t.Null()]),
+  claiming: t.Boolean(),
 });
 
 const errorShape = t.Object({ error: t.String() });
@@ -117,13 +119,17 @@ export const eventsRoute = new Elysia()
         const now = new Date();
         const testEvent = testModeEvent(now);
         if (!testEvent) return status(404, { error: "Event not found" });
-        return { slots: toSlots(testEvent, listTestSignups(now)) };
+        return {
+          slots: toSlots(testEvent, listTestSignups(now), (slot) =>
+            isClaiming(params.id, slot, now.getTime()),
+          ),
+        };
       }
       if (!db) return status(503, { error: "Database unavailable" });
       const [event] = await db.select().from(events).where(eq(events.id, params.id)).limit(1);
       if (!event) return status(404, { error: "Event not found" });
       const rows = await db.select().from(signups).where(eq(signups.eventId, params.id));
-      return { slots: toSlots(event, rows) };
+      return { slots: toSlots(event, rows, (slot) => isClaiming(params.id, slot)) };
     },
     {
       params: t.Object({ id: t.Numeric() }),
@@ -152,22 +158,27 @@ export const eventsRoute = new Elysia()
         const testEvent = testModeEvent();
         if (!testEvent) return status(404, { error: "Event not found" });
         if (body.slot >= testEvent.slotCount) return status(422, { error: "Slot out of range" });
-        const result = addTestSignup(body.slot, name, act);
-        if (!result.ok) {
-          return result.reason === "inactive"
-            ? status(404, { error: "Event not found" })
-            : status(409, { error: "That slot is already taken" });
+        beginClaim(params.id, body.slot);
+        try {
+          const result = addTestSignup(body.slot, name, act);
+          if (!result.ok) {
+            return result.reason === "inactive"
+              ? status(404, { error: "Event not found" })
+              : status(409, { error: "That slot is already taken" });
+          }
+          const { signup } = result;
+          return status(201, {
+            signup: {
+              id: signup.id,
+              slot: signup.slot,
+              name: signup.name,
+              act: signup.act,
+              createdAt: signup.createdAt.toISOString(),
+            },
+          });
+        } finally {
+          endClaim(params.id, body.slot);
         }
-        const { signup } = result;
-        return status(201, {
-          signup: {
-            id: signup.id,
-            slot: signup.slot,
-            name: signup.name,
-            act: signup.act,
-            createdAt: signup.createdAt.toISOString(),
-          },
-        });
       }
 
       if (!db) return status(503, { error: "Database unavailable" });
@@ -177,21 +188,26 @@ export const eventsRoute = new Elysia()
       if (eventMode(event, new Date()) !== "signup") {
         return status(409, { error: "Sign-ups are not open for this event" });
       }
-      const [row] = await db
-        .insert(signups)
-        .values({ eventId: params.id, slot: body.slot, name, act })
-        .onConflictDoNothing({ target: [signups.eventId, signups.slot] })
-        .returning();
-      if (!row) return status(409, { error: "That slot is already taken" });
-      return status(201, {
-        signup: {
-          id: row.id,
-          slot: row.slot,
-          name: row.name,
-          act: row.act,
-          createdAt: row.createdAt.toISOString(),
-        },
-      });
+      beginClaim(params.id, body.slot);
+      try {
+        const [row] = await db
+          .insert(signups)
+          .values({ eventId: params.id, slot: body.slot, name, act })
+          .onConflictDoNothing({ target: [signups.eventId, signups.slot] })
+          .returning();
+        if (!row) return status(409, { error: "That slot is already taken" });
+        return status(201, {
+          signup: {
+            id: row.id,
+            slot: row.slot,
+            name: row.name,
+            act: row.act,
+            createdAt: row.createdAt.toISOString(),
+          },
+        });
+      } finally {
+        endClaim(params.id, body.slot);
+      }
     },
     {
       params: t.Object({ id: t.Numeric() }),

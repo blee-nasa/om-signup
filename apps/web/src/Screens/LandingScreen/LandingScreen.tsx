@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BotMessageSquare } from "lucide-react";
-import { NextEventBanner, SignupSheet } from "@components";
+import { NextEventBanner, SignupSheet } from "@Components";
 import { fetchHealth, fetchNextEvent, type Health, type NextEvent } from "../../api.ts";
 import { ChatScreen } from "../ChatScreen/index.ts";
 import styles from "./LandingScreen.module.css";
