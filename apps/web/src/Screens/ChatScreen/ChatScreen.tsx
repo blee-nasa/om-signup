@@ -35,9 +35,9 @@ export const ChatScreen = ({ onClose, onAssistantReply }: ChatScreenProps) => {
   };
 
   return (
-    <section className={styles.container} aria-label="Chat with the emcee">
+    <section className={styles.container} aria-label="Chat with the AI Assistant">
       <header className="flex items-center justify-between border-b border-gray-200 p-4">
-        <h2 className="font-semibold">Ask the emcee</h2>
+        <h2 className="font-semibold">Ask the AI Assistant</h2>
         {onClose && (
           <button
             type="button"

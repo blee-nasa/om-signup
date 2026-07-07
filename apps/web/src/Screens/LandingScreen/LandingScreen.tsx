@@ -112,18 +112,20 @@ export const LandingScreen = () => {
         />
       </header>
 
-      <main className="grid flex-1 place-items-center p-4">
-        {schedule.phase === "loading" && <p className="text-gray-400">Loading schedule…</p>}
+      <main className="flex flex-1 flex-col">
+        {schedule.phase === "loading" && <p className="m-auto text-gray-400">Loading schedule…</p>}
         {schedule.phase === "error" && (
-          <p className="text-gray-400">Couldn't load the schedule — try again later.</p>
+          <p className="m-auto text-gray-400">Couldn't load the schedule — try again later.</p>
         )}
         {schedule.phase === "ok" &&
           (schedule.next.mode === "signup" && schedule.next.event ? (
             <SignupSheet key={schedule.next.event.id} event={schedule.next.event} />
           ) : (
-            <NextEventBanner
-              event={schedule.next.mode === "upcoming" ? schedule.next.event : null}
-            />
+            <div className="m-auto p-4">
+              <NextEventBanner
+                event={schedule.next.mode === "upcoming" ? schedule.next.event : null}
+              />
+            </div>
           ))}
       </main>
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SignupSheet } from "./SignupSheet.tsx";
@@ -107,6 +107,34 @@ describe("<SignupSheet />", () => {
     );
   });
 
+  it("keeps the modal and its error visible after a refresh shows the slot as taken", async () => {
+    let claimedByOther = false;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      if (init?.method === "POST") {
+        claimedByOther = true;
+        return jsonResponse({ error: "That slot is already taken" }, 409);
+      }
+      return jsonResponse({
+        slots: makeSlots(claimedByOther ? { 0: { name: "Someone Else", act: null } } : {}),
+      });
+    });
+    render(<SignupSheet event={event} />);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Sign up for the/ }).length).toBeGreaterThan(0),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Sign up for the/ })[0]!);
+    fireEvent.change(screen.getByLabelText("Your name"), { target: { value: "Brandon" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign me up" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("That slot is already taken")).toBeInTheDocument(),
+    );
+    await waitFor(() => expect(screen.getByText("Someone Else")).toBeInTheDocument());
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("That slot is already taken")).toBeInTheDocument();
+  });
+
   it("surfaces the window-closed message distinctly from slot-taken", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) =>
       init?.method === "POST"
@@ -125,6 +153,61 @@ describe("<SignupSheet />", () => {
     await waitFor(() =>
       expect(screen.getByText("Sign-ups are not open for this event")).toBeInTheDocument(),
     );
+  });
+
+  it("opens a claim modal dialog when an open slot is clicked", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ slots: makeSlots() }));
+    render(<SignupSheet event={event} />);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Sign up for the/ }).length).toBeGreaterThan(0),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /Sign up for the/ })[0]!);
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(/Claiming the/)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Your name")).toBeInTheDocument();
+  });
+
+  it("closes the claim modal via the close button without signing up", async () => {
+    const posts: unknown[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+      if (init?.method === "POST") {
+        posts.push(init.body);
+        return jsonResponse({}, 201);
+      }
+      return jsonResponse({ slots: makeSlots() });
+    });
+    render(<SignupSheet event={event} />);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Sign up for the/ }).length).toBeGreaterThan(0),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Sign up for the/ })[0]!);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Close"));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(posts).toHaveLength(0);
+  });
+
+  it("closes the claim modal on Escape", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ slots: makeSlots() }));
+    render(<SignupSheet event={event} />);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Sign up for the/ }).length).toBeGreaterThan(0),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Sign up for the/ })[0]!);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("shows a loading state before the first slot fetch resolves", () => {
