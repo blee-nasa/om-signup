@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BotMessageSquare } from "lucide-react";
-import { NextEventBanner, SignupSheet } from "@Components";
+import { BotMessageSquare, Share2 } from "lucide-react";
+import { NextEventBanner, ShareModal, SignupSheet } from "@Components";
 import { fetchHealth, fetchNextEvent, type Health, type NextEvent } from "../../api.ts";
 import { ChatScreen } from "../ChatScreen/index.ts";
 import styles from "./LandingScreen.module.css";
@@ -45,6 +45,7 @@ export const LandingScreen = () => {
   const [status, setStatus] = useState<Status>({ phase: "loading" });
   const [schedule, setSchedule] = useState<Schedule>({ phase: "loading" });
   const [chatOpen, setChatOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const scheduleReq = useRef(0);
 
   useEffect(() => {
@@ -102,15 +103,29 @@ export const LandingScreen = () => {
 
   return (
     <div className={styles.container}>
-      <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4">
         <span className="font-semibold">LaRC Open Mic</span>
-        <span
-          role="status"
-          aria-label={dot.label}
-          title={dot.label}
-          className={`h-3 w-3 rounded-full ${dotClass[dot.color]}`}
-        />
+        <div className="flex items-center gap-3">
+          <span
+            role="status"
+            aria-label={dot.label}
+            title={dot.label}
+            className={`h-3 w-3 rounded-full ${dotClass[dot.color]}`}
+          />
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            aria-label="Share"
+            title="Share"
+            className="grid h-8 w-8 place-items-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
+            <Share2 aria-hidden className="h-4 w-4" />
+          </button>
+        </div>
       </header>
+      <div className="h-14" aria-hidden />
+
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
 
       <main className="flex flex-1 flex-col">
         {schedule.phase === "loading" && <p className="m-auto text-gray-400">Loading schedule…</p>}
