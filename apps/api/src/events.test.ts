@@ -15,9 +15,16 @@ const post = (path: string, body: unknown) =>
       body: JSON.stringify(body),
     }),
   );
+const postEmpty = (path: string) =>
+  app.handle(new Request(`http://localhost${path}`, { method: "POST" }));
 
 type SlotBody = {
-  slots: Array<{ slot: number; startsAt: string; signup: { name: string; act: string | null } | null }>;
+  slots: Array<{
+    slot: number;
+    startsAt: string;
+    signup: { name: string; act: string | null } | null;
+    claiming: boolean;
+  }>;
 };
 
 afterEach(() => {
@@ -92,6 +99,41 @@ describe("test mode routes", () => {
   it("404s the test event when test mode is inactive", async () => {
     const res = await get("/events/0/signups");
     expect(res.status).toBe(404);
+  });
+
+  it("marks a slot as claiming until it's released", async () => {
+    startTestMode(30);
+    const claimed = await postEmpty("/events/0/signups/2/claim");
+    expect(claimed.status).toBe(200);
+
+    const midway = await get("/events/0/signups");
+    const midwayBody = (await midway.json()) as SlotBody;
+    expect(midwayBody.slots[2]).toMatchObject({ signup: null, claiming: true });
+
+    const released = await postEmpty("/events/0/signups/2/release");
+    expect(released.status).toBe(200);
+
+    const after = await get("/events/0/signups");
+    const afterBody = (await after.json()) as SlotBody;
+    expect(afterBody.slots[2]).toMatchObject({ signup: null, claiming: false });
+  });
+
+  it("409s a claim on an already-taken slot", async () => {
+    startTestMode(30);
+    await post("/events/0/signups", { slot: 3, name: "Test Pilot" });
+    const claimed = await postEmpty("/events/0/signups/3/claim");
+    expect(claimed.status).toBe(409);
+  });
+
+  it("422s a claim on an out-of-range slot", async () => {
+    startTestMode(30);
+    const claimed = await postEmpty("/events/0/signups/9/claim");
+    expect(claimed.status).toBe(422);
+  });
+
+  it("404s a claim when test mode is inactive", async () => {
+    const claimed = await postEmpty("/events/0/signups/0/claim");
+    expect(claimed.status).toBe(404);
   });
 });
 
@@ -172,6 +214,28 @@ describe.skipIf(!process.env.DATABASE_URL || !process.env.DB_TESTS)("events rout
     const { event } = (await res.json()) as { event: { id: number } };
     const rejected = await post(`/events/${event.id}/signups`, { slot: 9, name: "Tenth" });
     expect(rejected.status).toBe(422);
+  });
+
+  it("marks a slot as claiming until it's released, and 409s a claim on a taken slot", async () => {
+    const res = await get("/events/next");
+    const { event } = (await res.json()) as { event: { id: number } };
+
+    const claimed = await postEmpty(`/events/${event.id}/signups/1/claim`);
+    expect(claimed.status).toBe(200);
+
+    const midway = await get(`/events/${event.id}/signups`);
+    const midwayBody = (await midway.json()) as SlotBody;
+    expect(midwayBody.slots[1]).toMatchObject({ signup: null, claiming: true });
+
+    const released = await postEmpty(`/events/${event.id}/signups/1/release`);
+    expect(released.status).toBe(200);
+
+    const after = await get(`/events/${event.id}/signups`);
+    const afterBody = (await after.json()) as SlotBody;
+    expect(afterBody.slots[1]).toMatchObject({ signup: null, claiming: false });
+
+    const claimTaken = await postEmpty(`/events/${event.id}/signups/0/claim`);
+    expect(claimTaken.status).toBe(409);
   });
 
   it("honors per-event slot configuration", async () => {

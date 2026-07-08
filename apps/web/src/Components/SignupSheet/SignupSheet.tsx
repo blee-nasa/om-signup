@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ListMusic, X } from "lucide-react";
 import {
   ApiError,
+  claimSlot,
   createSignup,
   fetchSlots,
+  releaseSlot,
   type OpenMicEvent,
   type SlotEntry,
 } from "../../api.ts";
@@ -15,7 +17,8 @@ type SignupSheetProps = {
 
 type Load = "loading" | "ready" | "error";
 
-const POLL_MS = 10_000;
+const POLL_MS = 4_000;
+const CLAIM_HEARTBEAT_MS = 5_000;
 
 const timeLabel = (iso: string) =>
   new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
@@ -63,6 +66,38 @@ export const SignupSheet = ({ event = null }: SignupSheetProps) => {
     setSelected(null);
     setError(null);
   }, []);
+
+  useEffect(() => {
+    if (eventId === undefined || selected === null) return;
+    const slot = selected;
+    let cancelled = false;
+
+    const claim = () => {
+      claimSlot(eventId, slot).catch((err) => {
+        if (cancelled) return;
+        if (err instanceof ApiError) {
+          setError(err.message);
+          refresh();
+        }
+      });
+    };
+
+    claim();
+    const id = setInterval(claim, CLAIM_HEARTBEAT_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      releaseSlot(eventId, slot);
+    };
+  }, [eventId, selected, refresh]);
+
+  useEffect(() => {
+    if (eventId === undefined || selected === null) return;
+    const url = `/api/events/${eventId}/signups/${selected}/release`;
+    const onPageHide = () => navigator.sendBeacon?.(url);
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [eventId, selected]);
 
   useEffect(() => {
     if (selected === null) return;

@@ -60,6 +60,8 @@ describe("<SignupSheet />", () => {
     let taken: Record<number, { name: string; act: string | null }> = {};
     const posts: unknown[] = [];
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/claim") || url.endsWith("/release")) return jsonResponse({ ok: true });
       if (init?.method === "POST") {
         const body = JSON.parse(String(init.body)) as { slot: number; name: string };
         posts.push(body);
@@ -173,7 +175,9 @@ describe("<SignupSheet />", () => {
 
   it("closes the claim modal via the close button without signing up", async () => {
     const posts: unknown[] = [];
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/claim") || url.endsWith("/release")) return jsonResponse({ ok: true });
       if (init?.method === "POST") {
         posts.push(init.body);
         return jsonResponse({}, 201);
@@ -220,5 +224,70 @@ describe("<SignupSheet />", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
     render(<SignupSheet event={event} />);
     await waitFor(() => expect(screen.getByText(/Couldn't load the sheet/)).toBeInTheDocument());
+  });
+
+  it("fires a claim request when an open slot is tapped, and a release request when the modal closes", async () => {
+    const calls: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/claim") || url.endsWith("/release")) {
+        calls.push(`${init?.method} ${url}`);
+        return jsonResponse({ ok: true });
+      }
+      return jsonResponse({ slots: makeSlots() });
+    });
+    render(<SignupSheet event={event} />);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Sign up for the/ }).length).toBeGreaterThan(0),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Sign up for the/ })[3]!);
+
+    await waitFor(() =>
+      expect(calls).toContain(`POST /api/events/${event.id}/signups/3/claim`),
+    );
+
+    fireEvent.click(screen.getByLabelText("Close"));
+
+    await waitFor(() =>
+      expect(calls).toContain(`POST /api/events/${event.id}/signups/3/release`),
+    );
+  });
+
+  it("shows an immediate error when the claim request finds the slot already taken", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/claim")) {
+        return jsonResponse({ error: "That slot is already taken" }, 409);
+      }
+      if (url.endsWith("/release")) return jsonResponse({ ok: true });
+      if (init?.method === "POST") return jsonResponse({}, 201);
+      return jsonResponse({ slots: makeSlots() });
+    });
+    render(<SignupSheet event={event} />);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Sign up for the/ }).length).toBeGreaterThan(0),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Sign up for the/ })[0]!);
+
+    await waitFor(() =>
+      expect(screen.getByText("That slot is already taken")).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("shows other slots as being claimed by someone else", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        slots: makeSlots().map((slot) => (slot.slot === 5 ? { ...slot, claiming: true } : slot)),
+      }),
+    );
+    render(<SignupSheet event={event} />);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/slot is being claimed by someone else/)).toBeInTheDocument(),
+    );
+    expect(screen.getAllByRole("button", { name: /Sign up for the/ })).toHaveLength(8);
   });
 });

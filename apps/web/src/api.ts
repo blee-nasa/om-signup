@@ -65,6 +65,15 @@ export async function fetchSlots(eventId: number): Promise<SlotEntry[]> {
   return body.slots;
 }
 
+export async function claimSlot(eventId: number, slot: number): Promise<void> {
+  const res = await fetch(`/api/events/${eventId}/signups/${slot}/claim`, { method: "POST" });
+  if (!res.ok) throw new ApiError(await serverError(res, `Claim failed: ${res.status}`), res.status);
+}
+
+export async function releaseSlot(eventId: number, slot: number): Promise<void> {
+  await fetch(`/api/events/${eventId}/signups/${slot}/release`, { method: "POST" }).catch(() => {});
+}
+
 export async function createSignup(
   eventId: number,
   input: { slot: number; name: string; act?: string },

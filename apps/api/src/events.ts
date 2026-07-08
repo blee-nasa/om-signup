@@ -230,4 +230,68 @@ export const eventsRoute = new Elysia()
         tags: ["Events"],
       },
     },
+  )
+  .post(
+    "/events/:id/signups/:slot/claim",
+    async ({ params, status }) => {
+      if (!Number.isInteger(params.id)) return status(404, { error: "Event not found" });
+
+      if (params.id === TEST_EVENT_ID) {
+        const testEvent = testModeEvent();
+        if (!testEvent) return status(404, { error: "Event not found" });
+        if (params.slot >= testEvent.slotCount) return status(422, { error: "Slot out of range" });
+        if (listTestSignups().some((signup) => signup.slot === params.slot)) {
+          return status(409, { error: "That slot is already taken" });
+        }
+        beginClaim(params.id, params.slot);
+        return { ok: true };
+      }
+
+      if (!db) return status(503, { error: "Database unavailable" });
+      const [event] = await db.select().from(events).where(eq(events.id, params.id)).limit(1);
+      if (!event) return status(404, { error: "Event not found" });
+      if (params.slot >= event.slotCount) return status(422, { error: "Slot out of range" });
+      if (eventMode(event, new Date()) !== "signup") {
+        return status(409, { error: "Sign-ups are not open for this event" });
+      }
+      const rows = await db.select().from(signups).where(eq(signups.eventId, params.id));
+      if (rows.some((row) => row.slot === params.slot)) {
+        return status(409, { error: "That slot is already taken" });
+      }
+      beginClaim(params.id, params.slot);
+      return { ok: true };
+    },
+    {
+      params: t.Object({ id: t.Numeric(), slot: t.Numeric() }),
+      response: {
+        200: t.Object({ ok: t.Boolean() }),
+        404: errorShape,
+        409: errorShape,
+        422: errorShape,
+        503: errorShape,
+      },
+      detail: {
+        summary: "Start or renew claim-intent for a slot",
+        description:
+          "Marks a slot as being claimed so other clients see it as pending while someone fills out the sign-up form. Claims self-expire; call again to renew, or call release to clear one early.",
+        tags: ["Events"],
+      },
+    },
+  )
+  .post(
+    "/events/:id/signups/:slot/release",
+    ({ params, status }) => {
+      if (!Number.isInteger(params.id)) return status(404, { error: "Event not found" });
+      endClaim(params.id, params.slot);
+      return { ok: true };
+    },
+    {
+      params: t.Object({ id: t.Numeric(), slot: t.Numeric() }),
+      response: { 200: t.Object({ ok: t.Boolean() }), 404: errorShape },
+      detail: {
+        summary: "Release claim-intent for a slot",
+        description: "Clears a pending claim early instead of waiting for it to expire.",
+        tags: ["Events"],
+      },
+    },
   );
